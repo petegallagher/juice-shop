@@ -1,4 +1,9 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { type ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing'
 import { MatCardModule } from '@angular/material/card'
 
 import { ErrorPageComponent } from './error-page.component'
@@ -9,17 +14,17 @@ describe('ErrorPageComponent', () => {
   let component: ErrorPageComponent
   let fixture: ComponentFixture<ErrorPageComponent>
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ErrorPageComponent],
       imports: [
         TranslateModule.forRoot(),
-        MatCardModule
+        MatCardModule,
+        ErrorPageComponent
       ],
       providers: [
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParams: { 'error': 'UNAUTHORIZED_PAGE_ACCESS_ERROR' } } }
+          useValue: { snapshot: { queryParams: { error: 'UNAUTHORIZED_PAGE_ACCESS_ERROR' } } }
         }
       ]
     })

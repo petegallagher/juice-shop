@@ -1,14 +1,19 @@
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing'
 
 import { QuantityService } from './quantity.service'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('QuantityService', () => {
   beforeEach(() => {
-
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [QuantityService]
+      imports: [],
+      providers: [QuantityService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
     })
   })
 
@@ -19,7 +24,7 @@ describe('QuantityService', () => {
   it('should get all quantities directly from the rest api', inject([QuantityService, HttpTestingController],
     fakeAsync((service: QuantityService, httpMock: HttpTestingController) => {
       let res
-      service.getAll().subscribe((data) => res = data)
+      service.getAll().subscribe((data) => (res = data))
       const req = httpMock.expectOne('http://localhost:3000/api/Quantitys/')
       req.flush({ data: 'apiResponse' })
 
@@ -34,7 +39,7 @@ describe('QuantityService', () => {
   it('should change quantity directly via the rest api', inject([QuantityService, HttpTestingController],
     fakeAsync((service: QuantityService, httpMock: HttpTestingController) => {
       let res
-      service.put(42,{}).subscribe((data) => res = data)
+      service.put(42, {}).subscribe((data) => (res = data))
       const req = httpMock.expectOne('http://localhost:3000/api/Quantitys/42')
       req.flush({ data: 'apiResponse' })
 
@@ -45,5 +50,4 @@ describe('QuantityService', () => {
       httpMock.verify()
     })
   ))
-
 })

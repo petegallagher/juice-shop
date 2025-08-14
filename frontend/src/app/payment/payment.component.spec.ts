@@ -1,13 +1,18 @@
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
 import { TranslateModule, TranslateService } from '@ngx-translate/core'
-import { HttpClientTestingModule } from '@angular/common/http/testing'
+import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { MatCardModule } from '@angular/material/card'
 import { MatFormFieldModule } from '@angular/material/form-field'
-import { async, ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing'
+import { type ComponentFixture, fakeAsync, TestBed, waitForAsync } from '@angular/core/testing'
 import { PaymentComponent } from './payment.component'
 import { MatInputModule } from '@angular/material/input'
 import { ReactiveFormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
-import { BarRatingModule } from 'ng2-bar-rating'
+
 import { of, throwError } from 'rxjs'
 import { MatTableModule } from '@angular/material/table'
 import { MatExpansionModule } from '@angular/material/expansion'
@@ -22,14 +27,18 @@ import { PaymentMethodComponent } from '../payment-method/payment-method.compone
 import { RouterTestingModule } from '@angular/router/testing'
 import { OrderSummaryComponent } from '../order-summary/order-summary.component'
 import { PurchaseBasketComponent } from '../purchase-basket/purchase-basket.component'
-import { CookieService } from 'ngx-cookie'
+import { CookieService } from 'ngy-cookie'
 import { WalletService } from '../Services/wallet.service'
 import { DeliveryService } from '../Services/delivery.service'
 import { UserService } from '../Services/user.service'
 import { LoginComponent } from '../login/login.component'
 import { Location } from '@angular/common'
-import { MatCheckboxModule, MatIconModule, MatTooltipModule } from '@angular/material'
 import { WalletComponent } from '../wallet/wallet.component'
+import { MatIconModule } from '@angular/material/icon'
+import { MatCheckboxModule } from '@angular/material/checkbox'
+import { MatTooltipModule } from '@angular/material/tooltip'
+import { MatSnackBar } from '@angular/material/snack-bar'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('PaymentComponent', () => {
   let component: PaymentComponent
@@ -42,11 +51,10 @@ describe('PaymentComponent', () => {
   let walletService: any
   let deliveryService: any
   let userService: any
-  let location: Location
+  let snackBar: any
 
-  beforeEach(async(() => {
-
-    configurationService = jasmine.createSpyObj('ConfigurationService',['getApplicationConfiguration'])
+  beforeEach(waitForAsync(() => {
+    configurationService = jasmine.createSpyObj('ConfigurationService', ['getApplicationConfiguration'])
     configurationService.getApplicationConfiguration.and.returnValue(of({}))
     translateService = jasmine.createSpyObj('TranslateService', ['get'])
     translateService.get.and.returnValue(of({}))
@@ -55,46 +63,43 @@ describe('PaymentComponent', () => {
     translateService.onDefaultLangChange = new EventEmitter()
     basketService = jasmine.createSpyObj('BasketService', ['applyCoupon'])
     basketService.applyCoupon.and.returnValue(of({}))
-    dialog = jasmine.createSpyObj('MatDialog',['open'])
+    dialog = jasmine.createSpyObj('MatDialog', ['open'])
     dialog.open.and.returnValue(null)
-    cookieService = jasmine.createSpyObj('CookieService',['remove'])
-    walletService = jasmine.createSpyObj('AddressService',['get', 'put'])
+    cookieService = jasmine.createSpyObj('CookieService', ['remove', 'put'])
+    walletService = jasmine.createSpyObj('AddressService', ['get', 'put'])
     walletService.get.and.returnValue(of({}))
     walletService.put.and.returnValue(of({}))
     deliveryService = jasmine.createSpyObj('DeliveryService', ['getById'])
     deliveryService.getById.and.returnValue(of({ price: 10 }))
-    userService = jasmine.createSpyObj('UserService',['deluxeStatus', 'upgradeToDeluxe', 'saveLastLoginIp'])
+    userService = jasmine.createSpyObj('UserService', ['deluxeStatus', 'upgradeToDeluxe', 'saveLastLoginIp'])
     userService.deluxeStatus.and.returnValue(of({}))
     userService.upgradeToDeluxe.and.returnValue(of({}))
     userService.isLoggedIn = jasmine.createSpyObj('userService.isLoggedIn', ['next'])
     userService.isLoggedIn.next.and.returnValue({})
     userService.saveLastLoginIp.and.returnValue(of({}))
+    snackBar = jasmine.createSpyObj('MatSnackBar', ['open'])
 
     TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule.withRoutes([
-          { path: 'order-summary', component: OrderSummaryComponent },
-          { path: 'login', component: LoginComponent },
-          { path: 'wallet', component: WalletComponent }
-        ]),
-        TranslateModule.forRoot(),
-        HttpClientTestingModule,
-        ReactiveFormsModule,
-        BarRatingModule,
-        BrowserAnimationsModule,
-        MatCardModule,
-        MatTableModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatExpansionModule,
-        MatDividerModule,
-        MatRadioModule,
-        MatDialogModule,
-        MatIconModule,
-        MatCheckboxModule,
-        MatTooltipModule
-      ],
-      declarations: [ PaymentComponent, PaymentMethodComponent, OrderSummaryComponent, PurchaseBasketComponent, LoginComponent, WalletComponent ],
+      imports: [RouterTestingModule.withRoutes([
+        { path: 'order-summary', component: OrderSummaryComponent },
+        { path: 'login', component: LoginComponent },
+        { path: 'wallet', component: WalletComponent }
+      ]),
+      TranslateModule.forRoot(),
+      ReactiveFormsModule,
+      BrowserAnimationsModule,
+      MatCardModule,
+      MatTableModule,
+      MatFormFieldModule,
+      MatInputModule,
+      MatExpansionModule,
+      MatDividerModule,
+      MatRadioModule,
+      MatDialogModule,
+      MatIconModule,
+      MatCheckboxModule,
+      MatTooltipModule,
+      PaymentComponent, PaymentMethodComponent, OrderSummaryComponent, PurchaseBasketComponent, LoginComponent, WalletComponent],
       providers: [
         { provide: BasketService, useValue: basketService },
         { provide: MatDialog, useValue: dialog },
@@ -103,12 +108,14 @@ describe('PaymentComponent', () => {
         { provide: CookieService, useValue: cookieService },
         { provide: WalletService, useValue: walletService },
         { provide: DeliveryService, useValue: deliveryService },
-        { provide: UserService, useValue: userService }
-
+        { provide: UserService, useValue: userService },
+        { provide: MatSnackBar, useValue: snackBar },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
       ]
     })
-    .compileComponents()
-    location = TestBed.get(Location)
+      .compileComponents()
+    TestBed.inject(Location)
   }))
 
   beforeEach(() => {
@@ -121,22 +128,27 @@ describe('PaymentComponent', () => {
     expect(component).toBeTruthy()
   })
 
-  it('should not hold twitter or facebook URL if not defined in configuration', () => {
+  it('should not hold blueSky or reddit URL if not defined in configuration', () => {
     configurationService.getApplicationConfiguration.and.returnValue(of({}))
-    expect(component.twitterUrl).toBeNull()
-    expect(component.facebookUrl).toBeNull()
+    expect(component.blueSkyUrl).toBeNull()
+    expect(component.redditUrl).toBeNull()
   })
 
-  it('should use custom twitter URL if configured', () => {
-    configurationService.getApplicationConfiguration.and.returnValue(of({ application: { twitterUrl: 'twitter' } }))
-    component.ngOnInit()
-    expect(component.twitterUrl).toBe('twitter')
+  it('should hold the default applicationName if not defined in configuration', () => {
+    configurationService.getApplicationConfiguration.and.returnValue(of({}))
+    expect(component.applicationName).toBe('OWASP Juice Shop')
   })
 
-  it('should use custom facebook URL if configured', () => {
-    configurationService.getApplicationConfiguration.and.returnValue(of({ application: { facebookUrl: 'facebook' } }))
+  it('should use custom blueSky URL if configured', () => {
+    configurationService.getApplicationConfiguration.and.returnValue(of({ application: { social: { blueSkyUrl: 'blueSky' } } }))
     component.ngOnInit()
-    expect(component.facebookUrl).toBe('facebook')
+    expect(component.blueSkyUrl).toBe('blueSky')
+  })
+
+  it('should use custom reddit URL if configured', () => {
+    configurationService.getApplicationConfiguration.and.returnValue(of({ application: { social: { redditUrl: 'reddit' } } }))
+    component.ngOnInit()
+    expect(component.redditUrl).toBe('reddit')
   })
 
   it('should log error while getting application configuration from backend API directly to browser console', fakeAsync(() => {
@@ -179,11 +191,11 @@ describe('PaymentComponent', () => {
     component.couponControl.setValue('valid_base85')
     component.applyCoupon()
 
-    expect(translateService.get).toHaveBeenCalledWith('DISCOUNT_APPLIED',{ discount: 42 })
+    expect(translateService.get).toHaveBeenCalledWith('DISCOUNT_APPLIED', { discount: 42 })
     expect(component.couponError).toBeUndefined()
   })
 
-  it('should translate DISCOUNT_APPLIED message' , () => {
+  it('should translate DISCOUNT_APPLIED message', () => {
     basketService.applyCoupon.and.returnValue(of(42))
     translateService.get.and.returnValue(of('Translation of DISCOUNT_APPLIED'))
     component.couponControl.setValue('')
@@ -197,9 +209,9 @@ describe('PaymentComponent', () => {
     expect(component.couponError).toBeUndefined()
   })
 
-  it('should store discount percent in session storage' , () => {
+  it('should store discount percent in session storage', () => {
     translateService.get.and.returnValue(of('Translation of DISCOUNT_APPLIED'))
-    spyOn(sessionStorage,'setItem')
+    spyOn(sessionStorage, 'setItem')
     component.showConfirmation(70)
     expect(sessionStorage.setItem).toHaveBeenCalledWith('couponDiscount', 70 as any)
   })
@@ -207,7 +219,7 @@ describe('PaymentComponent', () => {
   it('should store payment id on calling getMessage', () => {
     component.getMessage(1)
     expect(component.paymentId).toBe(1)
-    expect(component.payUsingWallet).toBe(false)
+    expect(component.paymentMode).toEqual('card')
   })
 
   it('should open QrCodeComponent for Bitcoin', () => {
@@ -215,12 +227,12 @@ describe('PaymentComponent', () => {
     const data = {
       data: {
         data: 'bitcoin:1AbKfgvw9psQ41NbLi8kufDQTezwG8DRZm',
-        url: '/redirect?to=https://blockchain.info/address/1AbKfgvw9psQ41NbLi8kufDQTezwG8DRZm',
+        url: './redirect?to=https://blockchain.info/address/1AbKfgvw9psQ41NbLi8kufDQTezwG8DRZm',
         address: '1AbKfgvw9psQ41NbLi8kufDQTezwG8DRZm',
         title: 'TITLE_BITCOIN_ADDRESS'
       }
     }
-    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent,data)
+    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent, data)
   })
 
   it('should open QrCodeComponent for Dash', () => {
@@ -228,12 +240,12 @@ describe('PaymentComponent', () => {
     const data = {
       data: {
         data: 'dash:Xr556RzuwX6hg5EGpkybbv5RanJoZN17kW',
-        url: '/redirect?to=https://explorer.dash.org/address/Xr556RzuwX6hg5EGpkybbv5RanJoZN17kW',
+        url: './redirect?to=https://explorer.dash.org/address/Xr556RzuwX6hg5EGpkybbv5RanJoZN17kW',
         address: 'Xr556RzuwX6hg5EGpkybbv5RanJoZN17kW',
         title: 'TITLE_DASH_ADDRESS'
       }
     }
-    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent,data)
+    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent, data)
   })
 
   it('should open QrCodeComponent for Ether', () => {
@@ -241,87 +253,46 @@ describe('PaymentComponent', () => {
     const data = {
       data: {
         data: '0x0f933ab9fCAAA782D0279C300D73750e1311EAE6',
-        url: '/redirect?to=https://etherscan.io/address/0x0f933ab9fcaaa782d0279c300d73750e1311eae6',
+        url: './redirect?to=https://etherscan.io/address/0x0f933ab9fcaaa782d0279c300d73750e1311eae6',
         address: '0x0f933ab9fCAAA782D0279C300D73750e1311EAE6',
         title: 'TITLE_ETHER_ADDRESS'
       }
     }
-    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent,data)
+    expect(dialog.open).toHaveBeenCalledWith(QrCodeComponent, data)
   })
-
-  it('should remove authentication token from localStorage', () => {
-    spyOn(localStorage,'removeItem')
-    component.logout()
-    expect(localStorage.removeItem).toHaveBeenCalledWith('token')
-  })
-
-  it('should remove authentication token from cookies', () => {
-    component.logout()
-    expect(cookieService.remove).toHaveBeenCalledWith('token')
-  })
-
-  it('should remove basket id from session storage', () => {
-    spyOn(sessionStorage,'removeItem')
-    component.logout()
-    expect(sessionStorage.removeItem).toHaveBeenCalledWith('bid')
-  })
-
-  it('should set the login status to be false via UserService', () => {
-    component.logout()
-    expect(userService.isLoggedIn.next).toHaveBeenCalledWith(false)
-  })
-
-  it('should save the last login IP address', () => {
-    component.logout()
-    expect(userService.saveLastLoginIp).toHaveBeenCalled()
-  })
-
-  it('should forward to login page', fakeAsync(() => {
-    component.logout()
-    tick()
-    expect(location.path()).toBe('/login')
-  }))
 
   it('should call initTotal on calling ngOnInit', () => {
-    spyOn(component,'initTotal')
+    spyOn(component, 'initTotal')
     component.ngOnInit()
     expect(component.initTotal).toHaveBeenCalled()
   })
 
   it('should call initTotal on calling showConfirmation', () => {
-    spyOn(component,'initTotal')
+    spyOn(component, 'initTotal')
     component.showConfirmation(10)
     expect(component.initTotal).toHaveBeenCalled()
   })
 
-  it('should make payUsingWallet true on calling useWallet', () => {
+  it('should make paymentMode wallet on calling useWallet', () => {
     component.useWallet()
-    expect(component.payUsingWallet).toBe(true)
+    expect(component.paymentMode).toEqual('wallet')
   })
 
   it('should store paymentId in session storage on calling choosePayment in shop mode', () => {
     component.mode = 'shop'
-    component.payUsingWallet = false
+    component.paymentMode = 'card'
     component.paymentId = 1
-    spyOn(sessionStorage,'setItem')
+    spyOn(sessionStorage, 'setItem')
     component.choosePayment()
     expect(sessionStorage.setItem).toHaveBeenCalledWith('paymentId', 1 as any)
   })
 
-  it('should store wallet as paymentId in session storage on calling choosePayment while payUsingWallet is true', () => {
+  it('should store wallet as paymentId in session storage on calling choosePayment while paymentMode is equal to wallet', () => {
     component.mode = 'shop'
-    component.payUsingWallet = true
-    spyOn(sessionStorage,'setItem')
+    component.paymentMode = 'wallet'
+    spyOn(sessionStorage, 'setItem')
     component.choosePayment()
     expect(sessionStorage.setItem).toHaveBeenCalledWith('paymentId', 'wallet')
-  })
-
-  it('should call logout on calling choosePayment in deluxe mode', () => {
-    component.mode = 'deluxe'
-    userService.upgradeToDeluxe.and.returnValue(of([]))
-    spyOn(component,'logout')
-    component.choosePayment()
-    expect(component.logout).toHaveBeenCalled()
   })
 
   it('should log error from upgrade to deluxe API call directly to browser console', fakeAsync(() => {
@@ -336,8 +307,17 @@ describe('PaymentComponent', () => {
   it('should remove walletTotal from session storage on calling choosePayment in wallet mode', () => {
     component.mode = 'wallet'
     walletService.put.and.returnValue(of({}))
-    spyOn(sessionStorage,'removeItem')
+    spyOn(sessionStorage, 'removeItem')
     component.choosePayment()
     expect(sessionStorage.removeItem).toHaveBeenCalledWith('walletTotal')
+  })
+
+  it('should add token to local storage and cookie on calling choosePayment in deluxe mode', () => {
+    component.mode = 'deluxe'
+    userService.upgradeToDeluxe.and.returnValue(of({ token: 'tokenValue' }))
+    spyOn(localStorage, 'setItem')
+    component.choosePayment()
+    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'tokenValue')
+    expect(cookieService.put).toHaveBeenCalledWith('token', 'tokenValue')
   })
 })

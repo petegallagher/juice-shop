@@ -1,8 +1,13 @@
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
 import { SearchResultComponent } from '../search-result/search-result.component'
 import { WindowRefService } from '../Services/window-ref.service'
-import { HttpClientTestingModule } from '@angular/common/http/testing'
+import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { UserService } from '../Services/user.service'
-import { async, ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing'
+import { type ComponentFixture, fakeAsync, TestBed, tick, waitForAsync } from '@angular/core/testing'
 import { LoginComponent } from './login.component'
 import { RouterTestingModule } from '@angular/router/testing'
 import { ReactiveFormsModule } from '@angular/forms'
@@ -13,7 +18,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatCardModule } from '@angular/material/card'
 import { MatInputModule } from '@angular/material/input'
-import { CookieModule, CookieService } from 'ngx-cookie'
+import { CookieModule, CookieService } from 'ngy-cookie'
 import { Location } from '@angular/common'
 import { of, throwError } from 'rxjs'
 import { MatTableModule } from '@angular/material/table'
@@ -23,6 +28,7 @@ import { MatDividerModule } from '@angular/material/divider'
 import { TranslateModule } from '@ngx-translate/core'
 import { MatGridListModule } from '@angular/material/grid-list'
 import { MatTooltipModule } from '@angular/material/tooltip'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('LoginComponent', () => {
   let component: LoginComponent
@@ -30,46 +36,43 @@ describe('LoginComponent', () => {
   let userService: any
   let location: Location
 
-  beforeEach(async(() => {
-
+  beforeEach(waitForAsync(() => {
     userService = jasmine.createSpyObj('UserService', ['login'])
     userService.login.and.returnValue(of({}))
     userService.isLoggedIn = jasmine.createSpyObj('userService.isLoggedIn', ['next'])
     userService.isLoggedIn.next.and.returnValue({})
 
     TestBed.configureTestingModule({
-      declarations: [ LoginComponent, SearchResultComponent ],
-      imports: [
-        HttpClientTestingModule,
-        RouterTestingModule.withRoutes([
-          { path: 'search', component: SearchResultComponent }
-        ]
-        ),
-        ReactiveFormsModule,
-        CookieModule.forRoot(),
-        TranslateModule.forRoot(),
-        BrowserAnimationsModule,
-        MatCheckboxModule,
-        MatFormFieldModule,
-        MatCardModule,
-        MatIconModule,
-        MatInputModule,
-        MatTableModule,
-        MatPaginatorModule,
-        MatDialogModule,
-        MatDividerModule,
-        MatGridListModule,
-        MatTooltipModule
-      ],
+      imports: [RouterTestingModule.withRoutes([
+        { path: 'search', component: SearchResultComponent }
+      ]),
+      ReactiveFormsModule,
+      CookieModule.forRoot(),
+      TranslateModule.forRoot(),
+      BrowserAnimationsModule,
+      MatCheckboxModule,
+      MatFormFieldModule,
+      MatCardModule,
+      MatIconModule,
+      MatInputModule,
+      MatTableModule,
+      MatPaginatorModule,
+      MatDialogModule,
+      MatDividerModule,
+      MatGridListModule,
+      MatTooltipModule,
+      LoginComponent, SearchResultComponent],
       providers: [
         { provide: UserService, useValue: userService },
         WindowRefService,
-        CookieService
+        CookieService,
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
       ]
     })
-    .compileComponents()
+      .compileComponents()
 
-    location = TestBed.get(Location)
+    location = TestBed.inject(Location)
   }))
 
   beforeEach(() => {
@@ -85,14 +88,14 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy()
   })
 
-  it('should have email as compulsory' , () => {
+  it('should have email as compulsory', () => {
     component.emailControl.setValue('')
     expect(component.emailControl.valid).toBeFalsy()
     component.emailControl.setValue('Value')
     expect(component.emailControl.valid).toBe(true)
   })
 
-  it('should have password as compulsory' , () => {
+  it('should have password as compulsory', () => {
     component.passwordControl.setValue('')
     expect(component.passwordControl.valid).toBeFalsy()
     component.passwordControl.setValue('Value')
@@ -100,7 +103,7 @@ describe('LoginComponent', () => {
   })
 
   it('should have remember-me checked if email token is present as in localStorage', () => {
-    localStorage.setItem('email','a@a')
+    localStorage.setItem('email', 'a@a')
     component.ngOnInit()
     expect(component.rememberMe.value).toBe(true)
   })
@@ -110,7 +113,7 @@ describe('LoginComponent', () => {
     expect(component.rememberMe.value).toBeFalsy()
   })
 
-  it('should flag OAuth as disabled if server is running on unauthorized redirect URI' , () => {
+  it('should flag OAuth as disabled if server is running on unauthorized redirect URI', () => {
     expect(component.oauthUnavailable).toBe(true)
   })
 

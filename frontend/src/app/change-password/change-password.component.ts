@@ -1,35 +1,48 @@
-import { AbstractControl, FormControl, Validators } from '@angular/forms'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { type AbstractControl, UntypedFormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { UserService } from '../Services/user.service'
 import { Component } from '@angular/core'
-import { dom, library } from '@fortawesome/fontawesome-svg-core'
+import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSave } from '@fortawesome/free-solid-svg-icons'
 import { faEdit } from '@fortawesome/free-regular-svg-icons'
 import { FormSubmitService } from '../Services/form-submit.service'
-import { TranslateService } from '@ngx-translate/core'
+import { TranslateService, TranslateModule } from '@ngx-translate/core'
+import { MatButtonModule } from '@angular/material/button'
+import { NgIf } from '@angular/common'
+import { MatInputModule } from '@angular/material/input'
+import { MatFormFieldModule, MatLabel, MatError, MatHint } from '@angular/material/form-field'
+import { MatCardModule } from '@angular/material/card'
+import { FlexModule } from '@angular/flex-layout/flex'
 
 library.add(faSave, faEdit)
-dom.watch()
 
 @Component({
   selector: 'app-change-password',
   templateUrl: './change-password.component.html',
-  styleUrls: ['./change-password.component.scss']
+  styleUrls: ['./change-password.component.scss'],
+  imports: [FlexModule, MatCardModule, TranslateModule, MatFormFieldModule, MatLabel, MatInputModule, FormsModule, ReactiveFormsModule, NgIf, MatError, MatHint, MatButtonModule]
 })
 export class ChangePasswordComponent {
-
-  public passwordControl: FormControl = new FormControl('', [Validators.required])
-  public newPasswordControl: FormControl = new FormControl('', [Validators.required, Validators.minLength(5), Validators.maxLength(20)])
-  public repeatNewPasswordControl: FormControl = new FormControl('', [Validators.required, Validators.minLength(5), Validators.maxLength(20), matchValidator(this.newPasswordControl)])
+  public passwordControl: UntypedFormControl = new UntypedFormControl('', [Validators.required])
+  public newPasswordControl: UntypedFormControl = new UntypedFormControl('', [Validators.required, Validators.minLength(5), Validators.maxLength(40)])
+  public repeatNewPasswordControl: UntypedFormControl = new UntypedFormControl('', [Validators.required, Validators.minLength(5), Validators.maxLength(40), matchValidator(this.newPasswordControl)])
   public error: any
   public confirmation: any
 
-  constructor (private userService: UserService, private formSubmitService: FormSubmitService, private translate: TranslateService) { }
+  constructor (private readonly userService: UserService, private readonly formSubmitService: FormSubmitService, private readonly translate: TranslateService) { }
 
-  ngOnInit () {
-    this.formSubmitService.attachEnterKeyHandler('password-form', 'changeButton', () => this.changePassword())
+  ngOnInit (): void {
+    this.formSubmitService.attachEnterKeyHandler('password-form', 'changeButton', () => { this.changePassword() })
   }
 
   changePassword () {
+    if (localStorage.getItem('email')?.match(/support@.*/) && !this.newPasswordControl.value.match(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,30}/)) {
+      console.error('Parola echipei de asistență nu respectă politica corporativă pentru conturile privilegiate! Vă rugăm să schimbați parola în consecință!')
+    }
     this.userService.changePassword({
       current: this.passwordControl.value,
       new: this.newPasswordControl.value,
@@ -52,17 +65,12 @@ export class ChangePasswordComponent {
 
   resetForm () {
     this.passwordControl.setValue('')
-    this.passwordControl.markAsPristine()
-    this.passwordControl.markAsUntouched()
-    this.newPasswordControl.setValue('')
-    this.newPasswordControl.markAsPristine()
-    this.newPasswordControl.markAsUntouched()
-    this.repeatNewPasswordControl.setValue('')
-    this.repeatNewPasswordControl.markAsPristine()
-    this.repeatNewPasswordControl.markAsUntouched()
+    this.resetPasswords()
   }
 
   resetPasswords () {
+    this.passwordControl.markAsPristine()
+    this.passwordControl.markAsUntouched()
     this.newPasswordControl.setValue('')
     this.newPasswordControl.markAsPristine()
     this.newPasswordControl.markAsUntouched()
@@ -73,9 +81,9 @@ export class ChangePasswordComponent {
 }
 
 function matchValidator (newPasswordControl: AbstractControl) {
-  return function matchOtherValidate (repeatNewPasswordControl: FormControl) {
-    let password = newPasswordControl.value
-    let passwordRepeat = repeatNewPasswordControl.value
+  return function matchOtherValidate (repeatNewPasswordControl: UntypedFormControl) {
+    const password = newPasswordControl.value
+    const passwordRepeat = repeatNewPasswordControl.value
     if (password !== passwordRepeat) {
       return { notSame: true }
     }

@@ -1,12 +1,18 @@
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing'
 import { DeliveryService } from './delivery.service'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('DeliveryService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [DeliveryService]
+      imports: [],
+      providers: [DeliveryService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
     })
   })
 
@@ -17,7 +23,7 @@ describe('DeliveryService', () => {
   it('should get address directly from the api', inject([DeliveryService, HttpTestingController],
     fakeAsync((service: DeliveryService, httpMock: HttpTestingController) => {
       let res
-      service.get().subscribe((data) => res = data)
+      service.get().subscribe((data) => (res = data))
       const req = httpMock.expectOne('http://localhost:3000/api/Deliverys')
       req.flush({ data: 'apiResponse' })
       tick()
@@ -30,7 +36,7 @@ describe('DeliveryService', () => {
   it('should get single address directly from the api', inject([DeliveryService, HttpTestingController],
     fakeAsync((service: DeliveryService, httpMock: HttpTestingController) => {
       let res
-      service.getById(1).subscribe((data) => res = data)
+      service.getById(1).subscribe((data) => (res = data))
       const req = httpMock.expectOne('http://localhost:3000/api/Deliverys/1')
       req.flush({ data: 'apiResponse' })
       tick()

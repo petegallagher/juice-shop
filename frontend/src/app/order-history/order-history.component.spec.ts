@@ -1,7 +1,12 @@
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
 import { TranslateModule } from '@ngx-translate/core'
 import { MatDividerModule } from '@angular/material/divider'
-import { HttpClientTestingModule } from '@angular/common/http/testing'
-import { async, ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing'
+import { provideHttpClientTesting } from '@angular/common/http/testing'
+import { type ComponentFixture, fakeAsync, TestBed, waitForAsync } from '@angular/core/testing'
 import { ProductService } from '../Services/product.service'
 import { RouterTestingModule } from '@angular/router/testing'
 import { MatGridListModule } from '@angular/material/grid-list'
@@ -13,10 +18,14 @@ import { of } from 'rxjs'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { throwError } from 'rxjs/internal/observable/throwError'
 import { OrderHistoryService } from '../Services/order-history.service'
-import { MatDialog, MatDialogModule, MatExpansionModule, MatIconModule, MatTooltipModule } from '@angular/material'
 import { OrderHistoryComponent } from './order-history.component'
-import { Product } from '../Models/product.model'
+import { type Product } from '../Models/product.model'
 import { ProductDetailsComponent } from '../product-details/product-details.component'
+import { MatIconModule } from '@angular/material/icon'
+import { MatTooltipModule } from '@angular/material/tooltip'
+import { MatDialog, MatDialogModule } from '@angular/material/dialog'
+import { MatExpansionModule } from '@angular/material/expansion'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('AccountingComponent', () => {
   let component: OrderHistoryComponent
@@ -25,9 +34,8 @@ describe('AccountingComponent', () => {
   let orderHistoryService
   let dialog: any
 
-  beforeEach(async(() => {
-
-    dialog = jasmine.createSpyObj('MatDialog',['open'])
+  beforeEach(waitForAsync(() => {
+    dialog = jasmine.createSpyObj('MatDialog', ['open'])
     dialog.open.and.returnValue(null)
     productService = jasmine.createSpyObj('ProductService', ['get'])
     productService.get.and.returnValue(of({}))
@@ -35,10 +43,7 @@ describe('AccountingComponent', () => {
     orderHistoryService.get.and.returnValue(of([]))
 
     TestBed.configureTestingModule({
-      declarations: [ OrderHistoryComponent ],
-      imports: [
-        RouterTestingModule,
-        HttpClientTestingModule,
+      imports: [RouterTestingModule,
         TranslateModule.forRoot(),
         BrowserAnimationsModule,
         MatTableModule,
@@ -50,15 +55,17 @@ describe('AccountingComponent', () => {
         MatIconModule,
         MatTooltipModule,
         MatDialogModule,
-        MatExpansionModule
-      ],
+        MatExpansionModule,
+        OrderHistoryComponent],
       providers: [
         { provide: ProductService, useValue: productService },
         { provide: OrderHistoryService, useValue: orderHistoryService },
-				{ provide: MatDialog, useValue: dialog }
+        { provide: MatDialog, useValue: dialog },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
       ]
     })
-    .compileComponents()
+      .compileComponents()
   }))
 
   beforeEach(() => {

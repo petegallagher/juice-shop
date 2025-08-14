@@ -1,10 +1,14 @@
-import { CookieModule } from 'ngx-cookie'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
 import { ClipboardModule } from 'ngx-clipboard'
 import { ServerStartedNotificationComponent } from './server-started-notification/server-started-notification.component'
 import { TranslateModule, TranslateService } from '@ngx-translate/core'
-import { HttpClientTestingModule } from '@angular/common/http/testing'
+import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { RouterTestingModule } from '@angular/router/testing'
-import { async, TestBed } from '@angular/core/testing'
+import { TestBed, waitForAsync } from '@angular/core/testing'
 import { AppComponent } from './app.component'
 import { NavbarComponent } from './navbar/navbar.component'
 import { SidenavComponent } from './sidenav/sidenav.component'
@@ -22,30 +26,22 @@ import { MatTooltipModule } from '@angular/material/tooltip'
 import { MatListModule } from '@angular/material/list'
 import { MatCardModule } from '@angular/material/card'
 import { NoopAnimationsModule } from '@angular/platform-browser/animations'
-import { MatInputModule, MatSnackBarModule } from '@angular/material'
-import { NgMatSearchBarModule } from 'ng-mat-search-bar'
 import { MatRadioModule } from '@angular/material/radio'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatDialogModule } from '@angular/material/dialog'
 import { LoginGuard } from './app.guard'
+import { MatInputModule } from '@angular/material/input'
+import { MatSnackBarModule } from '@angular/material/snack-bar'
+import { MatSearchBarComponent } from './mat-search-bar/mat-search-bar.component'
+import { CookieModule } from 'ngy-cookie'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('AppComponent', () => {
   let app: AppComponent
 
-  beforeEach(async(() => {
-
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [
-        AppComponent,
-        NavbarComponent,
-        WelcomeComponent,
-        SidenavComponent,
-        ChallengeSolvedNotificationComponent,
-        ServerStartedNotificationComponent
-      ],
-      imports: [
-        HttpClientTestingModule,
-        RouterTestingModule,
+      imports: [RouterTestingModule,
         MatToolbarModule,
         CookieModule.forRoot(),
         TranslateModule.forRoot(),
@@ -61,13 +57,18 @@ describe('AppComponent', () => {
         MatTooltipModule,
         NoopAnimationsModule,
         MatSnackBarModule,
-        NgMatSearchBarModule,
         MatRadioModule,
         MatDividerModule,
         MatListModule,
-        MatDialogModule
-      ],
-      providers : [ TranslateService, LoginGuard ]
+        MatDialogModule,
+        NavbarComponent,
+        WelcomeComponent,
+        SidenavComponent,
+        ChallengeSolvedNotificationComponent,
+        ServerStartedNotificationComponent,
+        MatSearchBarComponent,
+        AppComponent],
+      providers: [TranslateService, LoginGuard, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
     }).compileComponents()
   }))
 
@@ -77,7 +78,7 @@ describe('AppComponent', () => {
     fixture.detectChanges()
   })
 
-  it('should create the app', async(() => {
+  it('should create the app', waitForAsync(() => {
     expect(app).toBeTruthy()
   }))
 })

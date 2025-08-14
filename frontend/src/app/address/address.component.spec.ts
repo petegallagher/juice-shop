@@ -1,63 +1,80 @@
-import { TranslateModule } from '@ngx-translate/core'
-import { HttpClientTestingModule } from '@angular/common/http/testing'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { provideHttpClientTesting } from '@angular/common/http/testing'
 import { MatCardModule } from '@angular/material/card'
 import { MatFormFieldModule } from '@angular/material/form-field'
-import { async, ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing'
+import { type ComponentFixture, fakeAsync, TestBed, waitForAsync } from '@angular/core/testing'
 import { AddressComponent } from './address.component'
 import { MatInputModule } from '@angular/material/input'
 import { ReactiveFormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
-import { BarRatingModule } from 'ng2-bar-rating'
+
 import { of, throwError } from 'rxjs'
 import { RouterTestingModule } from '@angular/router/testing'
 import { AddressService } from '../Services/address.service'
-import {
-  MatDialogModule,
-  MatDividerModule,
-  MatExpansionModule,
-  MatIconModule,
-  MatRadioModule,
-  MatTableModule,
-  MatTooltipModule
-} from '@angular/material'
 import { AddressCreateComponent } from '../address-create/address-create.component'
+import { MatTableModule } from '@angular/material/table'
+import { MatExpansionModule } from '@angular/material/expansion'
+import { MatDividerModule } from '@angular/material/divider'
+import { MatRadioModule } from '@angular/material/radio'
+import { MatDialogModule } from '@angular/material/dialog'
+import { MatIconModule } from '@angular/material/icon'
+import { MatTooltipModule } from '@angular/material/tooltip'
+import { MatSnackBar } from '@angular/material/snack-bar'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
+import { EventEmitter } from '@angular/core'
+import { DeliveryMethodComponent } from '../delivery-method/delivery-method.component'
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 describe('AddressComponent', () => {
   let component: AddressComponent
   let fixture: ComponentFixture<AddressComponent>
   let addressService
+  let snackBar: any
+  let translateService
 
-  beforeEach(async(() => {
-
-    addressService = jasmine.createSpyObj('AddressService',['get', 'del'])
+  beforeEach(waitForAsync(() => {
+    addressService = jasmine.createSpyObj('AddressService', ['get', 'del'])
     addressService.get.and.returnValue(of([]))
     addressService.del.and.returnValue(of({}))
+    translateService = jasmine.createSpyObj('TranslateService', ['get'])
+    translateService.get.and.returnValue(of({}))
+    translateService.onLangChange = new EventEmitter()
+    translateService.onTranslationChange = new EventEmitter()
+    translateService.onDefaultLangChange = new EventEmitter()
+    snackBar = jasmine.createSpyObj('MatSnackBar', ['open'])
+    snackBar.open.and.returnValue(null)
 
     TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule,
-        TranslateModule.forRoot(),
-        HttpClientTestingModule,
-        ReactiveFormsModule,
-        BarRatingModule,
-        BrowserAnimationsModule,
-        MatCardModule,
-        MatTableModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatExpansionModule,
-        MatDividerModule,
-        MatRadioModule,
-        MatDialogModule,
-        MatIconModule,
-        MatTooltipModule
-      ],
-      declarations: [ AddressComponent, AddressCreateComponent ],
+      imports: [RouterTestingModule.withRoutes([
+        { path: 'delivery-method', component: DeliveryMethodComponent }
+      ]),
+      TranslateModule.forRoot(),
+      ReactiveFormsModule,
+      BrowserAnimationsModule,
+      MatCardModule,
+      MatTableModule,
+      MatFormFieldModule,
+      MatInputModule,
+      MatExpansionModule,
+      MatDividerModule,
+      MatRadioModule,
+      MatDialogModule,
+      MatIconModule,
+      MatTooltipModule,
+      AddressComponent, AddressCreateComponent],
       providers: [
-        { provide: AddressService, useValue: addressService }
+        { provide: AddressService, useValue: addressService },
+        { provide: TranslateService, useValue: translateService },
+        { provide: MatSnackBar, useValue: snackBar },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
       ]
     })
-    .compileComponents()
+      .compileComponents()
   }))
 
   beforeEach(() => {
@@ -97,8 +114,15 @@ describe('AddressComponent', () => {
     addressService.get.and.returnValue(of([]))
     addressService.del.and.returnValue(of([]))
     component.deleteAddress(1)
-    spyOn(component,'load')
+    spyOn(component, 'load')
     expect(addressService.del).toHaveBeenCalled()
     expect(addressService.get).toHaveBeenCalled()
   }))
+
+  it('should store address id in session storage', () => {
+    component.addressId = 1
+    spyOn(sessionStorage, 'setItem')
+    component.chooseAddress()
+    expect(sessionStorage.setItem).toHaveBeenCalledWith('addressId', 1 as any)
+  })
 })

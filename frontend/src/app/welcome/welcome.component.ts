@@ -1,28 +1,31 @@
-import { Component, OnInit } from '@angular/core'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { Component, type OnInit } from '@angular/core'
 import { ConfigurationService } from '../Services/configuration.service'
-import { MatDialog } from '@angular/material'
+import { MatDialog } from '@angular/material/dialog'
 import { WelcomeBannerComponent } from '../welcome-banner/welcome-banner.component'
-import { CookieService } from 'ngx-cookie'
+import { CookieService } from 'ngy-cookie'
 
 @Component({
   selector: 'app-welcome',
   templateUrl: 'welcome.component.html',
-  styleUrls: ['./welcome.component.scss']
+  styleUrls: ['./welcome.component.scss'],
+  standalone: true
 })
 
 export class WelcomeComponent implements OnInit {
-
   private readonly welcomeBannerStatusCookieKey = 'welcomebanner_status'
 
-  constructor (private dialog: MatDialog, private configurationService: ConfigurationService, private cookieService: CookieService) { }
+  constructor (private readonly dialog: MatDialog, private readonly configurationService: ConfigurationService, private readonly cookieService: CookieService) { }
 
   ngOnInit (): void {
-    let welcomeBannerStatus = this.cookieService.get(this.welcomeBannerStatusCookieKey)
-    if (welcomeBannerStatus === 'dismiss') {
-      return
-    } else {
+    const welcomeBannerStatus = this.cookieService.get(this.welcomeBannerStatusCookieKey)
+    if (welcomeBannerStatus !== 'dismiss') {
       this.configurationService.getApplicationConfiguration().subscribe((config: any) => {
-        if (config && config.application && config.application.welcomeBanner && !config.application.welcomeBanner.showOnFirstStart) {
+        if (config?.application?.welcomeBanner && !config.application.welcomeBanner.showOnFirstStart) {
           return
         }
         this.dialog.open(WelcomeBannerComponent, {
@@ -32,7 +35,7 @@ export class WelcomeComponent implements OnInit {
             top: '50px'
           }
         })
-      }, (err) => console.log(err))
+      }, (err) => { console.log(err) })
     }
   }
 }

@@ -1,18 +1,32 @@
-import { Component, OnInit } from '@angular/core'
-import { FormControl, Validators } from '@angular/forms'
+/*
+ * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
+ * SPDX-License-Identifier: MIT
+ */
+
+import { Component, type OnInit } from '@angular/core'
+import { UntypedFormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { ImageCaptchaService } from '../Services/image-captcha.service'
 import { DataSubjectService } from '../Services/data-subject.service'
 import { DomSanitizer } from '@angular/platform-browser'
+import { MatButtonModule } from '@angular/material/button'
+import { MatInputModule } from '@angular/material/input'
+import { MatLabel, MatFormFieldModule, MatHint, MatError } from '@angular/material/form-field'
+import { MatRadioGroup, MatRadioButton } from '@angular/material/radio'
+import { NgIf } from '@angular/common'
+import { TranslateModule } from '@ngx-translate/core'
+import { MatCardModule } from '@angular/material/card'
+import { FlexModule } from '@angular/flex-layout/flex'
+import { MatIconModule } from '@angular/material/icon'
 
 @Component({
   selector: 'app-data-export',
   templateUrl: './data-export.component.html',
-  styleUrls: ['./data-export.component.scss']
+  styleUrls: ['./data-export.component.scss'],
+  imports: [FlexModule, MatCardModule, TranslateModule, NgIf, MatRadioGroup, FormsModule, ReactiveFormsModule, MatLabel, MatRadioButton, MatFormFieldModule, MatInputModule, MatHint, MatError, MatButtonModule, MatIconModule]
 })
 export class DataExportComponent implements OnInit {
-
-  public captchaControl: FormControl = new FormControl('', [Validators.required, Validators.minLength(5)])
-  public formatControl: FormControl = new FormControl('', [Validators.required])
+  public captchaControl: UntypedFormControl = new UntypedFormControl('', [Validators.required, Validators.minLength(5)])
+  public formatControl: UntypedFormControl = new UntypedFormControl('', [Validators.required])
   public captcha: any
   private dataRequest: any = undefined
   public confirmation: any
@@ -21,15 +35,15 @@ export class DataExportComponent implements OnInit {
   public presenceOfCaptcha: boolean = false
   public userData: any
 
-  constructor (public sanitizer: DomSanitizer, private imageCaptchaService: ImageCaptchaService, private dataSubjectService: DataSubjectService) { }
-  ngOnInit () {
+  constructor (public sanitizer: DomSanitizer, private readonly imageCaptchaService: ImageCaptchaService, private readonly dataSubjectService: DataSubjectService) { }
+  ngOnInit (): void {
     this.needCaptcha()
     this.dataRequest = {}
   }
 
   needCaptcha () {
-    let nowTime = new Date()
-    let timeOfCaptcha = localStorage.getItem('lstdtxprt') ? new Date(JSON.parse(String(localStorage.getItem('lstdtxprt')))) : new Date(0)
+    const nowTime = new Date()
+    const timeOfCaptcha = localStorage.getItem('lstdtxprt') ? new Date(JSON.parse(String(localStorage.getItem('lstdtxprt')))) : new Date(0)
     if (nowTime.getTime() - timeOfCaptcha.getTime() < 300000) {
       this.getNewCaptcha()
       this.presenceOfCaptcha = true
@@ -51,9 +65,9 @@ export class DataExportComponent implements OnInit {
       this.error = null
       this.confirmation = data.confirmation
       this.userData = data.userData
-      window.open('', '_blank', 'width=500')!.document.write(this.userData)
+      window.open('', '_blank', 'width=500')?.document.write(this.userData)
       this.lastSuccessfulTry = new Date()
-      localStorage.setItem('lstdtxprt',JSON.stringify(this.lastSuccessfulTry))
+      localStorage.setItem('lstdtxprt', JSON.stringify(this.lastSuccessfulTry))
       this.ngOnInit()
       this.resetForm()
     }, (error) => {
